@@ -1,0 +1,38 @@
+<!DOCTYPE>
+<html>
+	<head>
+		<title>Admin</title>
+		<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css" integrity="sha384-9aIt2nRpC12Uk9gS9baDl411NQApFmC26EwAOH8WgZl5MYYxFfc+NcPb1dKGj7Sk" crossorigin="anonymous">
+	</head>
+	<body>
+	<div class="container">
+		<h2 class="text-dark">Add New Offer to the database</h2>
+		<form method="POST" action="/addOffer" name="addBus">
+				<div class="form-group ">
+					<label for="name" class="text-primary font-weight-bold">Shop Name :</label>
+					<input type="text" id="name" name="name" placeholder="name" class="form-control" >
+					<span id="numberloc" class="text-danger"></span>
+				</div>
+				<div class="form-group ">
+					<label for="desc" class="text-primary font-weight-bold">Description :</label>
+					<input type="text" id="desc" name="desc" placeholder="Desc" class="form-control">
+					<span id="seatloc" class="text-danger"></span>
+				</div>
+				<div class="form-group ">
+					<label for="loc" class="text-primary font-weight-bold">Location :</label>
+					<input type="text" id="loc" name="loc" placeholder="Coordinates" class="form-control">
+					<span id="travel_idloc" class="text-danger"></span>
+				</div>
+				<div class="form-group ">
+					<label for="code" class="text-primary font-weight-bold">Code :</label>
+					<input type="text" id="code" name="code" placeholder="Eg. SJKHKJ76788" class="form-control">
+					<span id="fromloc" class="text-danger"></span>
+				</div>
+				<div class="text-center">
+					<button type="submit" class="btn btn-lg btn-primary rounded-pill" >Submit</button>
+					<p></p>
+				</div>
+			</form>
+	</div>
+	</body>
+</html>
