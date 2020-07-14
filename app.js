@@ -16,12 +16,24 @@ var KEY = "SOmeRanDOmeSbnbfsjhbdfjsbdjkb839827428397482798%^%&^^&%&^%&^?>?/jhskj
 
 // MIDDLEWARES
 
-// SETTING UP THE VIEW ENGINE
-app.set("view engine","ejs");
+app.use(require("express-session")({
+	secret : "ThisIsNotMy Random_Salt",
+	resave : false,
+	saveUninitialized : false
+}));
 
-// TO ENABLE BODY PARSING
+app.use(passport.initialize());
+app.use(passport.session());
+
+passport.use(new LocalStrategy(User.authenticate()));
+passport.serializeUser(User.serializeUser());
+passport.deserializeUser(User.deserializeUser());
+
 app.use(bodyparser.json());
 app.use(bodyparser.urlencoded({extented:true}));
+
+// SETTING UP THE VIEW ENGINE
+app.set("view engine","ejs");
 
 // CONNECTING THE DATABASE TO THE SERVER
 mongoose.connect('mongodb://localhost/PaytrexDb', {
@@ -33,25 +45,8 @@ mongoose.connect('mongodb://localhost/PaytrexDb', {
 
 });
 
-app.use(require("express-session")({
-	secret : "ThisIsNotMy Random_Salt",
-	resave : false,
-	saveUninitialized : false
-}));
 
-app.use(passport.initialize());
-app.use(passport.session());
-
-
-passport.use(new LocalStrategy(User.authenticate()));
-passport.serializeUser(User.serializeUser());
-passport.deserializeUser(User.deserializeUser());
-
-// FUNCTIONS
-
-function displayData(){
-	console.log("NO. of users logged in : ",LoggedInUser);
-}
+///////////////////////////////////////--- FUNCTIONS ---/////////////////////////////////////////
 
 function jwtVerify(token){
 	var flag = 0;
@@ -59,19 +54,23 @@ function jwtVerify(token){
 		if(err){
 			console.log(err);
 		}else{
-			console.log(token);
 			flag = 1;
 		}
 	})
 	return flag;
 }
 
-// ROUTES
+///////////////////////////////// ROUTES/////////////////////////////////////
 
-// app.get("/",(req,res)=>{
-// 	res.send("Home");
-// });
+// @route GET /
+// @desc testing
 
+app.get("/",(req,res)=>{
+	res.send("Home");
+});
+
+// @route POST /login
+// @desc Authenticating user and iss a token
 
 app.post("/login",passport.authenticate('local'),function(req,res){
 		
@@ -87,9 +86,7 @@ app.post("/login",passport.authenticate('local'),function(req,res){
 									 'creditsEarned':user.data.credits,
 									 'disposedQuantity':user.data.trashWeight,
 									 'usageCount':user.data.trashCount,
-									 'token':token});
-				LoggedInUser++;
-				displayData();		
+									 'token':token});	
 			}		  
 		})
 	}else{
@@ -97,9 +94,8 @@ app.post("/login",passport.authenticate('local'),function(req,res){
 	}
 });
 
-
-
-// REGISTER ROUTE
+// @route POST /register
+// @desc Adding new user to db and Authenticating
 
 app.post("/register",function(req,res)
 {
@@ -145,15 +141,13 @@ app.post("/register",function(req,res)
 									 'disposedQuantity':user.data.trashWeight,
 									 'usageCount':user.data.trashCount,
 									 'token':token});
-									LoggedInUser++;
-									displayData();		
+									
 								}		  
 							})
 						});
 				}		
 		});
 });
-
 
 app.post("/home",(req,res)=>{
 	
@@ -164,23 +158,51 @@ app.post("/home",(req,res)=>{
 	}
 })
 
+// @route GET /addOffer
+// @desc renders the page to add new offers
+
 app.get("/addOffer",(req,res)=>{
 	res.render("addOffer");
 })
+
+// @route POST /addOffer
+// @desc Adds the new offer to db
 
 app.post("/addOffer",(req,res)=>{
 	var offer = new Offer( {
 		name:req.body.name,
 		desc:req.body.desc,
 		loc:req.body.loc,
-		code:req.body.code
+		code:req.body.code,
+		req:req.body.req
 	})
 	offer.save();
 	res.redirect("addOffer");
 })
 
+// @route GET /deleteOffer
+// @desc renders the page to delete a delete offer 
+
+app.get("/deleteOffer",(req,res)=>{
+	res.render("deleteOffer");
+})
+
+// @route POST /deleteOffer
+// @desc removing from the db 
+app.post("/deleteOffer",(req,res)=>{
+	Offer.findOneAndRemove({code:req.body.code},(err,offer)=>{
+		if(err){
+			console.log(err)
+		}else{
+			res.render("deleteOffer");
+		}
+	})
+})
+
+// @route POST /getOffers
+// @desc Returns All existing offers
+
 app.post("/getOffers",(req,res)=>{
-	console.log(req.body);
 	if(jwtVerify(req.body.token) == 1){
 		Offer.find({},(err,offers)=>{
 		res.status(200).send({"message":"Success",offers:offers});
@@ -191,7 +213,38 @@ app.post("/getOffers",(req,res)=>{
 	
 })
 
-app.listen(3000,()=>{
+// @route POST /updateData
+// @desc Updating the User data
+
+app.post("/updateData",(req,res)=>{
+	if(jwtVerify(req.body.token)==1){
+		jwt.verify(req.body.token,KEY,function(err,token){
+		if(err){
+			console.log(err);
+		}else{
+			User.findById(token.id,(err,user)=>{
+				user.data.credits += req.body.credits;
+				user.data.trashCount++;
+				user.data.trashWeight+=req.body.quantity;
+				user.save();
+				res.status(200).send({"message":"ok"});
+			})
+		}
+		})
+	}
+})
+
+// @route GET /logout
+// @desc Logs out user
+
+app.get('/logout', function(req, res){
+  req.logout();
+  res.status(200).send({"message":"logged out"});
+});
+
+// @desc Server listening on PORT 3000
+
+app.listen(process.env.PORT || 3000,()=>{
 	console.log("Server started");
 })
 
