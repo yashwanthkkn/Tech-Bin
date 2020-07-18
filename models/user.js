@@ -13,7 +13,9 @@ const UserSchema = new mongoose.Schema({
 	  trashCount:Number,
  	  trashWeight:Number,
   	  credits:Number
-  }
+  },
+  history:[]
+
 });
 
 UserSchema.plugin(passportLocalMongoose);
