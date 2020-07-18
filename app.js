@@ -237,7 +237,7 @@ app.post("/redeemOffer",(req,res)=>{
 
 app.get('/logout', function(req, res){
   req.logout();
-  res.status(200).send({"message":"logged out"});
+  res.redirect('/adminLogin');
 });
 
 /////////////////////////////////////////////A D M I N -- A L P H A///////////////////////////////////
@@ -327,7 +327,26 @@ app.post("/adminLogin",passport.authenticate('local', { failureRedirect: '/admin
 // @route GET /alphaConsole
 // @desc renders the alpha console
 app.get("/alphaConsole",(req,res)=>{
-	res.render("alphaConsole");
+	Bin.find({},(err,bins)=>{
+		if(err) throw err;
+		else{
+			Admin.find({},(err,admins)=>{
+				if(err) throw err;
+				else{
+					var avail = []
+					var unavail = []
+					bins.forEach((x)=>{
+						if(x.owned){
+							unavail.push(x);
+						}else{
+							avail.push(x);
+						}
+					})
+					res.render("alphaConsole",{bins:bins,admins:admins,avail:avail,unavail:unavail});				
+				}
+			})
+		}
+	})
 })
 
 // @route GET /addBin
@@ -372,7 +391,13 @@ app.get("/addAdmin",(req,res)=>{
 app.post("/addAdmin",(req,res)=>{
 
 	Bin.find({},(err,bins)=>{
-		if(bins.length < req.body.bins){
+		var avail=[];
+		bins.forEach((bin)=>{
+			if(!bin.owned){
+				avail.push(bin);
+			}
+		})
+		if(avail.length < req.body.bins){
 			res.render("addAdmin",{exists:false,flag:"Insufficient Bins"})
 		}else{
 			User.register(new User(
@@ -385,7 +410,7 @@ app.post("/addAdmin",(req,res)=>{
 				{
 					if(err.name === "UserExistsError")
 					{
-						res.render("addAdmin",{exists:true,flag:"User exists"});
+						res.render("addAdmin",{exists:true,flag:""});
 					}
 					else
 					{	
