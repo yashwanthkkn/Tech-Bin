@@ -1,36 +1,64 @@
 <%- include("partials/header"); %>
-	<div class="container">
-		<h2 class="text-dark">Add New Offer to the database</h2>
-		<form method="POST" action="/addOffer" name="addBus">
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+		<a class="navbar-brand" href="#"><strong class="pl-2"><i class="fas fa-dumpster-fire"></i>  Incentivized Tech Bin</strong></a>
+	  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+		<span class="navbar-toggler-icon"></span>
+	  </button>
+	  <div class="collapse navbar-collapse" id="navbarNav">
+		<ul class="navbar-nav">
+		  <li class="nav-item active">
+			<a class="nav-link" href="/adminConsole/<%=name%>">Home <span class="sr-only">(current)</span></a>
+		  </li>
+		  <li class="nav-item">
+			<a class="nav-link" href="/addOffer/<%=name%>">Add Offer</a>
+		  </li>
+		  <li class="nav-item">
+			<a class="nav-link" href="/deleteOffer/<%=name%>">Delete Offer</a>
+		  </li>
+		  <li class="nav-item">
+			<a class="nav-link" href="/logout">Logout</a>
+		  </li>
+		</ul>
+	  </div>
+    </nav>
+<div class="container">
+		<h2 class="text-dark text-center">Add New Offer</h2>
+	<div class="card text-white bg-dark border border-white rounded">
+		<div class="card-body">
+			<form method="POST" action="/addOffer/<%=name%>">
 				<div class="form-group ">
-					<label for="name" class="text-primary font-weight-bold">Shop Name :</label>
+					<label for="name" class="font-weight-bold">Shop Name :</label>
 					<input type="text" id="name" name="name" placeholder="name" class="form-control" >
 					<span id="numberloc" class="text-danger"></span>
 				</div>
 				<div class="form-group ">
-					<label for="desc" class="text-primary font-weight-bold">Description :</label>
+					<label for="desc" class="font-weight-bold">Description :</label>
 					<input type="text" id="desc" name="desc" placeholder="Desc" class="form-control">
 					<span id="seatloc" class="text-danger"></span>
 				</div>
 				<div class="form-group ">
-					<label for="loc" class="text-primary font-weight-bold">Location :</label>
+					<label for="loc" class="font-weight-bold">Location :</label>
 					<input type="text" id="loc" name="loc" placeholder="Coordinates" class="form-control">
 					<span id="travel_idloc" class="text-danger"></span>
 				</div>
 				<div class="form-group ">
-					<label for="code" class="text-primary font-weight-bold">Code :</label>
+					<label for="code" class=" font-weight-bold">Code :</label>
 					<input type="text" id="code" name="code" placeholder="Eg. SJKHKJ76788" class="form-control">
 					<span id="fromloc" class="text-danger"></span>
 				</div>
 				<div class="form-group ">
-					<label for="req" class="text-primary font-weight-bold">Points Required :</label>
+					<label for="req" class=" font-weight-bold">Points Required :</label>
 					<input type="text" id="req" name="req" placeholder="" class="form-control">
 					<span id="fromloc" class="text-danger"></span>
 				</div>
 				<div class="text-center">
-					<button type="submit" class="btn btn-lg btn-primary rounded-pill" >Submit</button>
+					<button type="submit" class="btn btn-lg btn-warning rounded-pill" >Submit</button>
 					<p></p>
 				</div>
-			</form>
+				<p class="text-center"><%=flag%> </p>
+			</form>	
+		</div>
+	</div>
+		
 	</div>
 <%- include("partials/footer"); %>

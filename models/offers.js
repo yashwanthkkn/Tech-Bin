@@ -8,7 +8,8 @@ const OfferSchema = new mongoose.Schema({
 	desc:String,
 	code:String,
 	loc:String,
-	req:String
+	req:String,
+	owner:String
 });
 
 

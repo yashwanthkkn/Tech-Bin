@@ -11,11 +11,67 @@ var express               = require("express"),
 	Admin                 = require("./models/admin"),
 
 	jwt = require("jsonwebtoken");
+var AWS = require("aws-sdk");
+const multer = require('multer');
+const multerS3 = require('multer-s3');
 
 var LoggedInUser = 0;  
 var app = express();
 var KEY = "SOmeRanDOmeSbnbfsjhbdfjsbdjkb839827428397482798%^%&^^&%&^%&^?>?/jhskjdhfkjskh";
 
+
+AWS.config.region = 'ap-south-1'; // Region
+AWS.config.credentials = new AWS.CognitoIdentityCredentials({
+    IdentityPoolId: 'ap-south-1:bdc6bae3-952d-4a50-b94e-fabd18a34d9d',
+});
+
+AWS.config.update({
+    accessKeyId : "AKIAQKY2NO7W7L2ANNHI",
+ secretAccessKey : "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",
+    region:"ap-south-1"
+});
+
+
+
+const rekognition = new AWS.Rekognition()
+
+
+
+
+var BucketName = "bucketforsbml";
+
+
+const s3 = new AWS.S3({
+  accessKeyId: 'AKIAQKY2NO7W7UFWM6XI',
+  secretAccessKey: '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',
+  Bucket: BucketName,
+  apiVersion: '2006-03-01'
+ });
+
+
+const fileFilter = (req, file, cb) => {
+    if (file.mimetype === 'image/jpeg' || file.mimetype === 'image/png') {
+      cb(null, true);
+    } else {
+      cb(new Error('Invalid file type, only JPEG and PNG is allowed!'), false);
+    }
+  }
+  
+  const upload = multer({
+    // fileFilter,
+    storage: multerS3({
+      acl: 'public-read',
+      s3:s3,
+      bucket: BucketName,
+      contentType: multerS3.AUTO_CONTENT_TYPE,
+      metadata: function (req, file, cb) {
+        cb(null, {fieldName: 'TESTING_METADATA'});
+      },
+      key: function (req, file, cb) {
+        cb(null, Date.now().toString())
+      }
+    })
+  });
 
 // MIDDLEWARES
 
@@ -38,8 +94,17 @@ app.use(bodyparser.urlencoded({extented:true}));
 // SETTING UP THE VIEW ENGINE
 app.set("view engine","ejs");
 
-// CONNECTING THE DATABASE TO THE SERVER
-mongoose.connect('mongodb://localhost/PaytrexDb', {
+// // CONNECTING THE DATABASE TO THE SERVER
+// mongoose.connect('mongodb://localhost/PaytrexDb', {
+	
+//   useNewUrlParser: true,
+//   useUnifiedTopology: true,
+//   useFindAndModify: false,
+//   useCreateIndex:true
+
+// });
+
+mongoose.connect('mongodb+srv://user:nN6JAsww5cMup1Ai@cluster0-f0akj.mongodb.net/SbDb?retryWrites=true&w=majority', {
 	
   useNewUrlParser: true,
   useUnifiedTopology: true,
@@ -47,7 +112,6 @@ mongoose.connect('mongodb://localhost/PaytrexDb', {
   useCreateIndex:true
 
 });
-
 
 ///////////////////////////////////////--- FUNCTIONS ---/////////////////////////////////////////
 
@@ -163,6 +227,34 @@ app.post("/home",(req,res)=>{
 	}
 })
 
+
+
+app.post("/getType",upload.single("image"),(req,res)=>{
+	if(jwtVerify(req.body.token) == 1){
+		var params = {
+      	Image:{
+          S3Object:{
+              Bucket:"bucketforsbml",
+              Name:req.file.key
+          }
+      	},
+      	MaxLabels:1,
+      	MinConfidence:80
+  		};
+  
+  	rekognition.detectLabels(params,(err,data)=>{
+      if(err){
+          console.log(err);
+      }else{
+		  console.log(data);
+		  res.status(200).send(data);
+      }
+  	})
+		
+ }else{
+		res.status(400).send({'Message':"Invalid request"});		
+	}
+})
 // @route POST /getOffers
 // @desc Returns All existing offers
 
@@ -314,7 +406,7 @@ app.post("/adminLogin",passport.authenticate('local', { failureRedirect: '/admin
 				if(req.body.username == 'adminalpha'){
 					res.redirect("/alphaConsole");
 				}else{
-					res.redirect("/adminConsole");	
+					res.redirect("/adminConsole/"+req.user.username);	
 				}
 			}		  
 		})
@@ -445,52 +537,92 @@ app.post("/addAdmin",(req,res)=>{
 	})
 })
 
-/////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////  -- ADMIN BETA -- ///////////////////////////////////////////////////////
 
 // @route GET /adminConsole
 // @desc renders the admin console
-app.get("/adminConsole",(req,res)=>{
-	res.render("adminConsole");
+app.get("/adminConsole/:name",(req,res)=>{
+	Admin.findOne({username:req.params.name},(err,admin)=>{
+		if(err) throw err;
+		else{
+			Bin.find({owner:req.params.name},(err,bins)=>{
+				if(err) throw err;
+				else{
+					Offer.find({owner:req.params.name},(err,offers)=>{
+						if(err) throw err;
+						else{
+					         res.render("adminConsole",{name:req.params.name,admin:admin,bins:bins,offers:offers});			
+						}
+					})
+				}
+				
+			})
+		}
+	})
+	
 })
 
 
 // @route GET /addOffer
 // @desc renders the page to add new offers
 
-app.get("/addOffer",(req,res)=>{
-	res.render("addOffer");
+app.get("/addOffer/:name",(req,res)=>{
+	res.render("addOffer",{name:req.params.name,flag:""});
 })
+
+// @route GET /addOfferS
+// @desc renders the page to add new offers
+
+app.get("/addOfferS/:name",(req,res)=>{
+	res.render("addOffer",{name:req.params.name,flag:"Added Successfully"});
+})
+
 
 // @route POST /addOffer
 // @desc Adds the new offer to db
 
-app.post("/addOffer",(req,res)=>{
-	var offer = new Offer( {
-		name:req.body.name,
-		desc:req.body.desc,
-		loc:req.body.loc,
-		code:req.body.code,
-		req:req.body.req
+app.post("/addOffer/:name",(req,res)=>{
+	Admin.findOne({username:req.params.name},(err,admin)=>{
+		if(err) throw err;
+		else{
+				var offer = new Offer( {
+				name:req.body.name,
+				desc:req.body.desc,
+				loc:req.body.loc,
+				code:req.body.code,
+				req:req.body.req,
+				owner:req.params.name
+				})
+		offer.save();
+		res.redirect("/addOfferS/"+req.params.name);			
+		}
 	})
-	offer.save();
-	res.redirect("addOffer");
+
 })
 
 // @route GET /deleteOffer
 // @desc renders the page to delete a delete offer 
 
-app.get("/deleteOffer",(req,res)=>{
-	res.render("deleteOffer");
+app.get("/deleteOffer/:name",(req,res)=>{
+	res.render("deleteOffer",{name:req.params.name,flag:""});
+})
+
+
+// @route GET /deleteOfferS
+// @desc renders the page to delete a delete offer 
+
+app.get("/deleteOfferS/:name",(req,res)=>{
+	res.render("deleteOffer",{name:req.params.name,flag:"Successfully deleted the offer"});
 })
 
 // @route POST /deleteOffer
 // @desc removing from the db 
-app.post("/deleteOffer",(req,res)=>{
+app.post("/deleteOffer/:name",(req,res)=>{
 	Offer.findOneAndRemove({code:req.body.code},(err,offer)=>{
 		if(err){
 			console.log(err)
 		}else{
-			res.render("deleteOffer");
+			res.redirect("/deleteOfferS/"+req.params.name);
 		}
 	})
 })
