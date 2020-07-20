@@ -1,0 +1,39 @@
+<%- include("partials/header"); %>
+
+<div class="container  mt-5 px-1">
+	<div class="card text-white bg-dark border border-white rounded">
+		<div class="card-body">
+			<div class="row ">
+				<div class="col-lg-2">
+				</div>
+				<div class="col-lg-8 pb-2 pt-2">	
+					<div class="text-center text-white pb-3 mt-2">
+						<h1 ><strong class="border border-white rounded-pill px-2 py-1"><i class="fas fa-dumpster-fire"></i> Smart Bin Admin </strong></h1>
+					</div>
+					<form method="POST" action="/adminRegister">
+						<div class="form-group">
+							<label for="username" class="text-white font-weight-bold"> <i class="fas fa-user"></i> Admin-Id :</label>
+							<input id="username" name="username" type="text" placeholder="Id" class="form-control" required>
+						</div>
+						<div class="form-group">
+							<label for="password" class="text-white font-weight-bold" > <i class="fas fa-key"></i> Password :</label>
+							<input id="password" name="password" type="password" placeholder="Password" class="form-control" required>
+						</div>
+						<p></p>
+						<div class="text-center">
+							<button type="submit" class="btn btn-lg btn-warning rounded-pill" >Register</button>
+						</div>
+						<p></p>
+						<% if(exists){%>
+								<p class="text-center">User exists</p>
+						<% } %>
+					</form>
+
+				</div>
+				<div class="col-lg-2">
+				</div>
+			</div>
+		</div>
+		</div>
+</div>
+<%- include("partials/footer"); %>

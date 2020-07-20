@@ -1,0 +1,57 @@
+<%- include("partials/header"); %>
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+		<a class="navbar-brand" href="#"><strong class="pl-2"><i class="fas fa-dumpster-fire"></i> Incentivized Tech Bin (Alpha)</strong></a>
+	  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+		<span class="navbar-toggler-icon"></span>
+	  </button>
+	  <div class="collapse navbar-collapse" id="navbarNav">
+		<ul class="navbar-nav">
+		  <li class="nav-item active">
+			<a class="nav-link" href="/alphaConsole">Home <span class="sr-only">(current)</span></a>
+		  </li>
+		  <li class="nav-item">
+			<a class="nav-link" href="/addAdmin">Add Admin</a>
+		  </li>
+		  <li class="nav-item">
+			<a class="nav-link" href="/addBin">Add Bin</a>
+		  </li>
+		  <li class="nav-item">
+			<a class="nav-link" href="/logout">Logout</a>
+		  </li>
+		</ul>
+	  </div>
+    </nav>
+<div class="container  mt-2 px-1">
+	<div class="card text-white bg-dark border border-white rounded">
+		<div class="card-body">
+			<div class="row ">
+				<div class="col-lg-2">
+				</div>
+				<div class="col-lg-8 pb-2 pt-2">	
+					<div class="text-center text-white pb-3 mt-2">
+						<h1 ><strong class="border border-white rounded-pill px-2 py-1"><i class="fas fa-dumpster-fire"></i> Add A BIN </strong></h1>
+					</div>
+					<form method="POST" action="/addBin">
+						<div class="form-group">
+							<label for="username" class="text-white font-weight-bold"> <i class="fas fa-user"></i> Bin-Id :</label>
+							<input id="username" name="username" type="text" placeholder="Id" class="form-control" required>
+						</div>
+						
+						<p></p>
+						<div class="text-center">
+							<button type="submit" class="btn btn-lg btn-warning rounded-pill" >Submit</button>
+						</div>
+						<p></p>
+						<% if(exists){%>
+								<p class="text-center">Already Exists</p>
+						<% } %>
+						<p class="text-center"><%=flag%></p>
+					</form>
+				</div>
+				<div class="col-lg-2">
+				</div>
+			</div>
+		</div>
+		</div>
+</div>
+<%- include("partials/footer"); %>
