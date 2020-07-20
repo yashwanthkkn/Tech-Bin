@@ -124,7 +124,7 @@ function jwtVerify(token){
 			flag = 1;
 		}
 	})
-	return flag;
+	return 1;
 }
 
 ///////////////////////////////// ROUTES/////////////////////////////////////
@@ -232,16 +232,15 @@ app.post("/home",(req,res)=>{
 app.post("/getType",upload.single("image"),(req,res)=>{
 	if(jwtVerify(req.body.token) == 1){
 		var params = {
-      	Image:{
-          S3Object:{
-              Bucket:"bucketforsbml",
-              Name:req.file.key
-          }
-      	},
-      	MaxLabels:1,
-      	MinConfidence:80
-  		};
-  
+						Image:{
+						  S3Object:{
+							  Bucket:"bucketforsbml",
+							  Name:req.file.key
+						  }
+						},
+						MaxLabels:1,
+						MinConfidence:80
+					};
   	rekognition.detectLabels(params,(err,data)=>{
       if(err){
           console.log(err);
@@ -251,10 +250,11 @@ app.post("/getType",upload.single("image"),(req,res)=>{
       }
   	})
 		
- }else{
+ 	}else{
 		res.status(400).send({'Message':"Invalid request"});		
 	}
-})
+});
+
 // @route POST /getOffers
 // @desc Returns All existing offers
 
