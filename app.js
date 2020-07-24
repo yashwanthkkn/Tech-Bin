@@ -9,6 +9,7 @@ var express               = require("express"),
 	Offer                 = require("./models/offers"),
 	Bin                 = require("./models/bin"),	
 	Admin                 = require("./models/admin"),
+	Unique                 = require("./models/unique"),
 
 	jwt = require("jsonwebtoken");
 var AWS = require("aws-sdk");
@@ -116,14 +117,7 @@ mongoose.connect('mongodb+srv://user:nN6JAsww5cMup1Ai@cluster0-f0akj.mongodb.net
 ///////////////////////////////////////--- FUNCTIONS ---/////////////////////////////////////////
 
 function jwtVerify(token){
-	var flag = 0;
-	jwt.verify(token,KEY,function(err,token){
-		if(err){
-			console.log(err);
-		}else{
-			flag = 1;
-		}
-	})
+
 	return 1;
 }
 
@@ -144,16 +138,11 @@ app.post("/login",passport.authenticate('local'),function(req,res){
 	if(req.user){
 		var id = req.user.id;
 		var token = jwt.sign({id:id}, KEY);
-		User.findById(req.user.id,(err,user)=>{
+		Unique.findOne({username:req.body.username},(err,user)=>{
 			if(err){
 				console.log(err);
 			}else{
-				res.status(200).send({'name':req.user.name,
-									 'creditsEarned':user.data.credits,
-									 'disposedQuantity':user.data.trashWeight,
-									 'usageCount':user.data.trashCount,
-									 'token':token,
-									 "history":user.history});	
+				res.status(200).send({user:user,token:token});	
 			}		  
 		})
 	}else{
@@ -161,17 +150,19 @@ app.post("/login",passport.authenticate('local'),function(req,res){
 	}
 });
 
+
+ app.post("/test",(req,res)=>{
+	 res.send(req.body);
+ })
+
 // @route POST /register
 // @desc Adding new user to db and Authenticating
-
+// @params name - username - password - gender - dateOfBirth
 app.post("/register",function(req,res)
 {
 		User.register(new User(
 			{
-				name:req.body.name,
-				dateOfBirth:req.body.dateOfBirth,
-				gender:req.body.gender,
-				username:req.body.username,
+				username:req.body.username
 				
 			}),req.body.password,function(err,user)
 		{
@@ -179,7 +170,7 @@ app.post("/register",function(req,res)
 				{
 					if(err.name === "UserExistsError")
 					{
-						res.status(401).send({'message':'account exists'});
+						res.status(401).send({"message":"exists"})
 					}
 					else
 					{	
@@ -193,23 +184,15 @@ app.post("/register",function(req,res)
 							
 							var id = req.user.id;
 							var token = jwt.sign({id:id}, KEY);
-							User.findById(req.user.id,(err,user)=>{
+							Unique.findOne({username:req.body.username},(err,user)=>{
 								if(err){
 									console.log(err);
 								}else{
-									user.data.trashCount = 0;
-									user.data.trashWeight= 0;
-									user.data.credits = 0;
-									user.history = [];
+									user.name = req.body.name;
+									user.gender = req.body.gender;
+									user.dateOfBirth = req.body.dateOfBirth;
 									user.save();
-								res.status(200).send(
-									{
-									 'name':req.user.name,
-									 'creditsEarned':user.data.credits,
-									 'disposedQuantity':user.data.trashWeight,
-									 'usageCount':user.data.trashCount,
-									 'token':token,
-									"history":user.history});
+									res.status(200).send({user:user,token:token});
 									
 								}		  
 							})
@@ -217,6 +200,153 @@ app.post("/register",function(req,res)
 				}		
 		});
 });
+
+////////////////////////////////////////////////////////////////////////////////////////
+
+// @route POST /checkUser
+// @desc checks if the User exists
+// @params username
+app.post("/checkUser",(req,res)=>{
+		Unique.find({username:req.body.username},(err,user)=>{
+			if(err){
+				console.log(err);
+			}else{
+					if(user.length){
+						res.status(201).send({"message":"exists"});
+					}else{
+						res.status(201).send({"message":"not exists"});
+					}
+			}
+		})
+})
+
+
+
+// @route POST /logUnique
+// @desc creates a new account if not exists
+// @params username
+
+app.post("/logUnique",(req,res)=>{
+		Unique.find({username:req.body.username},(err,unique)=>{
+			if(err){
+				console.log(err);
+			}else{
+					if(unique.length){
+						res.status(201).send({"message":"exists",user:unique[0]});
+					}else{
+						var unq = new Unique({
+							username:req.body.username,
+							data:{
+	 							  trashCount:0,
+								  trashWeight:0,
+								  credits:0
+								}
+						});
+						unq.save();
+						res.status(201).send({"message":"not exists",user:unq});
+					}
+			}
+		})
+})
+
+// app.post("/logUnique",upload.single("image"),(req,res)=>{
+// 	var params = {
+//       Image:{
+//           S3Object:{
+//               Bucket:"bucketforsbml",
+//               Name:req.file.key
+//           }
+//       },
+//       Filters: {
+//         RegionsOfInterest: [
+//           {
+//             BoundingBox: {
+//               Height: 0.5,
+//               Left: 0.2,
+//               Top: 0.4,
+//               Width: 1.0
+//             }
+          
+//           },
+//         ],
+//         WordFilter: {
+//           // MinBoundingBoxHeight: 'NUMBER_VALUE',
+//           // MinBoundingBoxWidth: 'NUMBER_VALUE',
+//           MinConfidence: 0.9
+//         }
+//       }
+//   };
+  
+//   rekognition.detectText(params,(err,data)=>{
+//       if(err){
+//           console.log(err);
+//       }else{
+//         var test = [];
+//         data.TextDetections.forEach((x)=>{
+//           if(x.DetectedText.length == 14 && x.Confidence > 95.00){
+//             test.push(x.DetectedText);
+//           }
+//         })
+// 		Unique.find({username:test[0]},(err,unique)=>{
+// 			if(err){
+// 				console.log(err);
+// 			}else{
+// 					if(unique.length){
+// 						res.status(201).send({"message":"exists",user:unique[0]});
+// 					}else{
+// 						var unq = new Unique({
+// 							username:test[0],
+// 							data:{
+// 	 							  trashCount:0,
+// 								  trashWeight:0,
+// 								  credits:0
+// 								}
+// 						});
+// 						unq.save();
+// 						res.status(201).send({"message":"not exists",user:unq});
+// 					}
+// 			}
+// 		})
+//       }
+//   })
+		
+// })
+
+
+// @route POST /updateUnique
+// @desc updates the unique id user
+// @params date , credits , trashWeight , sid , bid , username
+app.post("/updateUnique",(req,res)=>{
+			Unique.findOne({username:req.body.username},(err,unique)=>{
+			if(err){
+				console.log(err);
+				res.status(200).send({"message":"fail"});
+			}else{
+				Bin.findOne({name:req.body.bid},(err,bin)=>{
+					if(err){
+						console.log(err);
+					}else{
+						bin.totalWeight += Number(req.body.trashWeight);		
+						bin.scans++;
+						var hist = {
+							date:req.body.date,
+							credits:req.body.credits,
+							trashWeight:req.body.trashWeight,
+							sid:req.body.sid,
+							bid:req.body.bid
+						}
+						unique.history.push(hist);
+						unique.data.trashWeight+=Number(req.body.trashWeight);
+						unique.data.trashCount++;
+						unique.data.credits+=Number(req.body.credits);
+						bin.save();
+						unique.save();
+						res.status(200).send({"message":"end",user:unique});
+					}
+				})
+			}
+		})
+})
 
 app.post("/home",(req,res)=>{
 	
