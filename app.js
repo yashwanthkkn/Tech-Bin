@@ -1152,9 +1152,7 @@ app.get("/challenge/:name",(req,res)=>{
 					var sorted = sort(chal.parts);
 					res.render("challenge",{name:req.params.name,flag:true,chal:chal,winner:false});	
 				}else{
-					//
 					chal.parts = sort(chal.parts);
-					//
 					res.render("challenge",{name:req.params.name,flag:true,chal:chal,winner:true});	
 				}
 				
