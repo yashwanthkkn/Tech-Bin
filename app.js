@@ -1152,6 +1152,9 @@ app.get("/challenge/:name",(req,res)=>{
 					var sorted = sort(chal.parts);
 					res.render("challenge",{name:req.params.name,flag:true,chal:chal,winner:false});	
 				}else{
+					//
+					chal.parts = sort(chal.parts);
+					//
 					res.render("challenge",{name:req.params.name,flag:true,chal:chal,winner:true});	
 				}
 				
@@ -1232,11 +1235,10 @@ app.get("/removeChallenge/:name",(req,res)=>{
 					res.redirect("/challenge/"+req.params.name);
 				}
 			})
-			
-			
 		}
 	})
 })
+
 // @desc Server listening on PORT 3000
 
 app.listen(process.env.PORT || 3000,()=>{
