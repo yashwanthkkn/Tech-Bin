@@ -623,18 +623,25 @@ app.post("/joinChallenge",(req,res)=>{
 		else if(!user){
 			res.status(400).send({message:"noUser"})
 		}else{
+			var flag = 0;
 			Challenge.findOne({code:req.body.code},(er,chal)=>{
 				if(err) throw err;
 				else if(!chal){
 					res.status(400).send({message:"noCode"})
 				}else if(!chal.state){
 					res.status(400).send({message:"expired"})
-				}else{
-					user.chals.push(chal.code);
-					chal.parts.push({username:user.username,totalWeight:0,scans:0})
-					chal.save();
-					user.save();
-					res.status(200).send({message:"joined",chals:user.chals})
+				}else{		
+					var temp = user.chals.indexOf(req.body.code);
+							if(temp != -1){
+									res.status(200).send({message:"exists"})	;		
+							}else{
+							user.chals.push(chal.code);
+							chal.parts.push({username:user.username,totalWeight:0,scans:0})
+							chal.save();
+							user.save();
+							res.status(200).send({message:"joined"})	;
+								
+							}
 				}
 			})
 		}
@@ -650,7 +657,11 @@ app.post("/getChallengeList",(req,res)=>{
 		else if(!user){
 			res.status(400).send({message:"noUser"})
 		}else{
-			res.status(200).send(user.chals);
+			// Challenge.find({},(err,chals)=>{
+				
+			// 	
+			// })
+			res.status(200).send(user.chals);	
 		}
 	})
 })
