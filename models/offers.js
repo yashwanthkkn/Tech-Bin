@@ -9,7 +9,9 @@ const OfferSchema = new mongoose.Schema({
 	code:String,
 	loc:String,
 	req:String,
-	owner:String
+	owner:String,
+	img:String,
+	type:String
 });
 
 

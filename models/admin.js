@@ -8,6 +8,7 @@ const AdminSchema = new mongoose.Schema({
 	corp:String,
 	bins:[],
 	NOB:String,
+	challenge:String
 });
 
 

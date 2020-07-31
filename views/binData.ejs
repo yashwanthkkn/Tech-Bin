@@ -1,0 +1,61 @@
+<%- include("partials/header"); %>
+<div class="container mt-5 px-1">
+	<div class="card text-white bg-dark border border-white rounded">
+		<div class="card-body">
+<div class="row mt-1 text-warning">
+				<div class="col-lg-3"><h5><i class="fa fa-user"></i> Bin-Id</h5></div>
+				<div class="col-lg-3"><h5><i class="fas fa-dumpster-fire"></i> Owner</h5></div>
+				<div class="col-lg-3"><h5><i class="fas fa-dumpster-fire"></i> Total Weight</h5></div>
+				<div class="col-lg-3"><h5><i class="fas fa-dumpster-fire"></i> Number of Scans</h5></div>
+			</div>
+			<div class="row mt-1 pb-4 border-bottom border-white">
+				<div class="col-lg-3"><h2><%=bin.name%></h2></div>
+				<div class="col-lg-3"><h2><%=bin.owner%></h2></div>
+				<div class="col-lg-3"><h2><%=bin.totalWeight/1000%> Kg</h2></div>
+				<div class="col-lg-3"><h2><%=bin.scans%></h2></div>
+			</div>
+			<h2 class="text-center text-warning">History</h2>
+		</div>
+	</div>
+	<p></p>
+	<div class="card text-warning bg-dark border border-warning rounded">
+		<div class="card-body">
+			<div class="row">
+				<div class="col-lg-3">
+					<h4>Username</h4>
+				</div>
+				<div class="col-lg-3">
+					<h4>Earned</h4>
+				</div>
+				<div class="col-lg-3">
+					<h4>Weight</h4>
+				</div>
+				<div class="col-lg-3">
+					<h4>Date</h4>
+				</div>
+			</div>
+		</div>
+		<%bin.history.forEach((x)=>{%>
+			<div class="card text-white bg-dark border border-white rounded mt-1">
+		<div class="card-body ">
+			<div class="row">
+				<div class="col-lg-3">
+					<h5><%=x.by%></h5>
+				</div>
+				<div class="col-lg-3">
+					<h5><%=x.credits%></h5>
+				</div>
+				<div class="col-lg-3">
+					<h5><%=x.trashWeight%></h5>
+				</div>
+				<div class="col-lg-3">
+					<h5><%=x.date%></h5>
+				</div>
+			</div>
+		</div>
+	</div>	
+		<%})%>
+	</div>
+</div>
+
+<%- include("partials/footer"); %>

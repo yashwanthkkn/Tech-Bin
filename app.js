@@ -7,9 +7,13 @@ var express               = require("express"),
     passportLocalMongoose = require("passport-local-mongoose"),
     User                  = require("./models/user"),
 	Offer                 = require("./models/offers"),
-	Bin                 = require("./models/bin"),	
+	Bin                   = require("./models/bin"),	
 	Admin                 = require("./models/admin"),
-	Unique                 = require("./models/unique"),
+	Unique                = require("./models/unique"),	
+	Challenge                = require("./models/challenge"),
+	QRCode                = require('qrcode'),
+	CryptoJS              = require("crypto-js"),
+	cryptoRandomString    = require('crypto-random-string');
 
 	jwt = require("jsonwebtoken");
 var AWS = require("aws-sdk");
@@ -35,9 +39,6 @@ AWS.config.update({
 
 
 const rekognition = new AWS.Rekognition()
-
-
-
 
 var BucketName = "bucketforsbml";
 
@@ -121,6 +122,105 @@ function jwtVerify(token){
 	return 1;
 }
 
+function sort(temp){
+	flag = 0;
+	for(i=0;i<temp.length-1;i++){
+		for(j=i+1;j<temp.length;j++){
+			if(temp[i].totalWeight<temp[j].totalWeight){
+				t = temp[i];
+				temp[i]= temp[j];
+				temp[j]=t;
+			}
+			if(i==temp.length-2){
+				return temp;			
+			}
+		}
+	}
+	if(flag == 0){
+		return temp
+	}
+	
+}
+
+var d = [
+    [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+    [1, 2, 3, 4, 0, 6, 7, 8, 9, 5],
+    [2, 3, 4, 0, 1, 7, 8, 9, 5, 6],
+    [3, 4, 0, 1, 2, 8, 9, 5, 6, 7],
+    [4, 0, 1, 2, 3, 9, 5, 6, 7, 8],
+    [5, 9, 8, 7, 6, 0, 4, 3, 2, 1],
+    [6, 5, 9, 8, 7, 1, 0, 4, 3, 2],
+    [7, 6, 5, 9, 8, 2, 1, 0, 4, 3],
+    [8, 7, 6, 5, 9, 3, 2, 1, 0, 4],
+    [9, 8, 7, 6, 5, 4, 3, 2, 1, 0]
+];
+
+// permutation table p
+var p = [
+    [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+    [1, 5, 7, 6, 2, 8, 3, 0, 9, 4],
+    [5, 8, 0, 3, 7, 9, 6, 1, 4, 2],
+    [8, 9, 1, 6, 0, 4, 3, 5, 2, 7],
+    [9, 4, 5, 3, 1, 2, 6, 8, 7, 0],
+    [4, 2, 8, 6, 5, 7, 3, 9, 0, 1],
+    [2, 7, 9, 3, 8, 0, 6, 4, 1, 5],
+    [7, 0, 4, 6, 9, 1, 3, 2, 5, 8]
+];
+
+// inverse table inv
+var inv = [0, 4, 3, 2, 1, 5, 6, 7, 8, 9];
+
+// converts string or number to an array and inverts it
+function invArray(array) {
+
+    if (Object.prototype.toString.call(array) === "[object Number]") {
+        array = String(array);
+    }
+
+    if (Object.prototype.toString.call(array) === "[object String]") {
+        array = array.split("").map(Number);
+    }
+
+    return array.reverse();
+
+}
+
+// generates checksum
+function generate(array) {
+
+    var c = 0;
+    var invertedArray = invArray(array);
+
+    for (var i = 0; i < invertedArray.length; i++) {
+        c = d[c][p[((i + 1) % 8)][invertedArray[i]]];
+    }
+
+    return inv[c];
+}
+
+// validates checksum
+function validate(array) {
+
+    var c = 0;
+    var invertedArray = invArray(array);
+
+    for (var i = 0; i < invertedArray.length; i++) {
+        c = d[c][p[(i % 8)][invertedArray[i]]];
+    }
+
+    return (c === 0);
+}
+
+function check(n){
+    let res="";
+    for(i=0;i<n.length;i++){
+        if(! (n[i]==" ")){
+            res+=n[i];
+        }
+    }
+    return validate(res);
+}
+
 ///////////////////////////////// ROUTES/////////////////////////////////////
 
 // @route GET /
@@ -134,7 +234,9 @@ app.get("/",(req,res)=>{
 // @desc Authenticating user and iss a token
 
 app.post("/login",passport.authenticate('local'),function(req,res){
-		
+	if(!check(req.body.username)){
+			res.status(402).send({"message":"invalid"});
+	}else{
 	if(req.user){
 		var id = req.user.id;
 		var token = jwt.sign({id:id}, KEY);
@@ -148,6 +250,7 @@ app.post("/login",passport.authenticate('local'),function(req,res){
 	}else{
 		res.status(401).send({'Message':"Invalid credentials"});
 	}
+	}
 });
 
 
@@ -157,48 +260,53 @@ app.post("/login",passport.authenticate('local'),function(req,res){
 
 // @route POST /register
 // @desc Adding new user to db and Authenticating
-// @params name - username - password - gender - dateOfBirth
+// @params name(random name) - username - password - gender - dateOfBirth
 app.post("/register",function(req,res)
-{
-		User.register(new User(
-			{
-				username:req.body.username
-				
-			}),req.body.password,function(err,user)
-		{
-				if(err)
-				{
-					if(err.name === "UserExistsError")
+		 
+{		
+	if(!check(req.body.username)){
+			res.status(402).send({"message":"invalid"});
+	}else{
+		Unique.findOne({username:req.body.username},(err,uniq)=>{
+			if(err) throw err;
+			else if(!uniq){
+				res.status(402).send({message:"noUser"})
+			}else{
+				User.register(new User(
 					{
-						res.status(401).send({"message":"exists"})
-					}
-					else
-					{	
-						console.log(err);
-						res.status(400).send({'message':'I fkd up'});
-					}
-				}
-				else
-				{	
-						passport.authenticate("local")(req,res,function(){
-							
-							var id = req.user.id;
-							var token = jwt.sign({id:id}, KEY);
-							Unique.findOne({username:req.body.username},(err,user)=>{
-								if(err){
-									console.log(err);
-								}else{
-									user.name = req.body.name;
-									user.gender = req.body.gender;
-									user.dateOfBirth = req.body.dateOfBirth;
-									user.save();
-									res.status(200).send({user:user,token:token});
-									
-								}		  
-							})
-						});
-				}		
-		});
+						username:req.body.username
+
+					}),req.body.password,(err,user)=>{
+						if(err)
+						{
+							if(err.name === "UserExistsError")
+							{
+								res.status(401).send({"message":"exists"})
+							}
+							else
+							{	
+								console.log(err);
+								res.status(400).send({'message':'I fkd up'});
+							}
+						}
+						else
+						{	
+								passport.authenticate("local")(req,res,function(){
+
+									var id = req.user.id;
+									var token = jwt.sign({id:id}, KEY);
+									uniq.name = req.body.name;
+									uniq.gender = req.body.gender;
+									uniq.dateOfBirth = req.body.dateOfBirth;
+									uniq.save();
+									res.status(200).send({user:uniq,token:token});
+
+								});
+						}		
+				});		
+			}
+		})
+	}
 });
 
 ////////////////////////////////////////////////////////////////////////////////////////
@@ -212,7 +320,13 @@ app.post("/checkUser",(req,res)=>{
 				console.log(err);
 			}else{
 					if(user.length){
-						res.status(201).send({"message":"exists"});
+						User.find({username:req.body.username},(err,user)=>{
+							if(user.length == 0){
+								res.status(201).send({"message":"signup"});		
+							}	else{
+								res.status(201).send({"message":"login"});
+							}
+						})
 					}else{
 						res.status(201).send({"message":"not exists"});
 					}
@@ -220,18 +334,22 @@ app.post("/checkUser",(req,res)=>{
 		})
 })
 
-
+// >>>>>>>>>>>>>>>>>>>>>>>>>> NEW <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
 // @route POST /logUnique
 // @desc creates a new account if not exists
 // @params username
 
 app.post("/logUnique",(req,res)=>{
+	if(!check(req.body.username)){
+			res.status(201).send({"message":"invalid"});
+	}
+	else{
 		Unique.find({username:req.body.username},(err,unique)=>{
 			if(err){
 				console.log(err);
 			}else{
-					if(unique.length){
+					if(unique.length != 0){
 						res.status(201).send({"message":"exists",user:unique[0]});
 					}else{
 						var unq = new Unique({
@@ -247,71 +365,49 @@ app.post("/logUnique",(req,res)=>{
 					}
 			}
 		})
+	}
 })
 
-// app.post("/logUnique",upload.single("image"),(req,res)=>{
-// 	var params = {
-//       Image:{
-//           S3Object:{
-//               Bucket:"bucketforsbml",
-//               Name:req.file.key
-//           }
-//       },
-//       Filters: {
-//         RegionsOfInterest: [
-//           {
-//             BoundingBox: {
-//               Height: 0.5,
-//               Left: 0.2,
-//               Top: 0.4,
-//               Width: 1.0
-//             }
-          
-//           },
-//         ],
-//         WordFilter: {
-//           // MinBoundingBoxHeight: 'NUMBER_VALUE',
-//           // MinBoundingBoxWidth: 'NUMBER_VALUE',
-//           MinConfidence: 0.9
-//         }
-//       }
-//   };
-  
-//   rekognition.detectText(params,(err,data)=>{
-//       if(err){
-//           console.log(err);
-//       }else{
-//         var test = [];
-//         data.TextDetections.forEach((x)=>{
-//           if(x.DetectedText.length == 14 && x.Confidence > 95.00){
-//             test.push(x.DetectedText);
-//           }
-//         })
-// 		Unique.find({username:test[0]},(err,unique)=>{
+
+// // @route POST /updateUnique
+// // @desc updates the unique id user
+// // @params date , credits , trashWeight , sid , bid , username
+// app.post("/updateUnique",(req,res)=>{
+// 			Unique.findOne({username:req.body.username},(err,unique)=>{
 // 			if(err){
 // 				console.log(err);
+// 				res.status(200).send({"message":"fail"});
 // 			}else{
-// 					if(unique.length){
-// 						res.status(201).send({"message":"exists",user:unique[0]});
+// 				Bin.findOne({name:req.body.bid},(err,bin)=>{
+// 					if(err){
+// 						console.log(err);
+// 					}else if(!unique){
+// 						res.status(200).send({"message":"no such user"});
 // 					}else{
-// 						var unq = new Unique({
-// 							username:test[0],
-// 							data:{
-// 	 							  trashCount:0,
-// 								  trashWeight:0,
-// 								  credits:0
-// 								}
-// 						});
-// 						unq.save();
-// 						res.status(201).send({"message":"not exists",user:unq});
+// 						var credits = Number(req.body.trashWeight)/2;
+// 						unique.data.credits+=credits;
+// 						bin.totalWeight += Number(req.body.trashWeight);		
+// 						bin.scans++;
+// 						var hist = {
+// 							date:req.body.date,
+// 							credits:credits,
+// 							trashWeight:req.body.trashWeight,
+// 							sid:req.body.sid,
+// 							bid:req.body.bid,
+// 							by:req.body.username
+// 						}
+// 						unique.history.push(hist);
+// 						bin.history.push(hist);
+// 						unique.data.trashWeight+=Number(req.body.trashWeight);
+// 						unique.data.trashCount++;
+// 						bin.save();
+// 						unique.save();
+// 						res.status(200).send({"message":"end",user:unique});
 // 					}
+// 				})
 // 			}
 // 		})
-//       }
-//   })
-		
 // })
-
 
 // @route POST /updateUnique
 // @desc updates the unique id user
@@ -325,28 +421,106 @@ app.post("/updateUnique",(req,res)=>{
 				Bin.findOne({name:req.body.bid},(err,bin)=>{
 					if(err){
 						console.log(err);
+					}else if(!unique){
+						res.status(200).send({"message":"no such user"});
 					}else{
+						var credits = Number(req.body.trashWeight)/2;
+						unique.data.credits+=credits;
 						bin.totalWeight += Number(req.body.trashWeight);		
 						bin.scans++;
 						var hist = {
 							date:req.body.date,
-							credits:req.body.credits,
+							credits:credits,
 							trashWeight:req.body.trashWeight,
 							sid:req.body.sid,
-							bid:req.body.bid
+							bid:req.body.bid,
+							by:req.body.username
 						}
+						if(unique.chals.length!=0){
+								Challenge.findOne({owner:req.body.sid},(err,chal)=>{
+									if(chal){
+										var temp = chal.parts;
+										var i = 0;
+										for(y =0;y<temp.length;y++){
+											if(temp[y].username==unique.username){
+												temp[y].totalWeight+=Number(req.body.trashWeight);
+												temp[y].scans++;
+												chal.parts = temp;
+												chal.totalWeight+=Number(req.body.trashWeight);
+												chal.markModified('parts');
+												chal.save();
+												unique.history.push(hist);
+												bin.history.push(hist);
+												unique.data.trashWeight+=Number(req.body.trashWeight);
+												unique.data.trashCount++;
+												bin.save();
+												unique.save();
+												res.status(200).send({"message":"end",user:unique});
+												
+											}
+										}
+									}else{
+												unique.history.push(hist);
+												bin.history.push(hist);
+												unique.data.trashWeight+=Number(req.body.trashWeight);
+												unique.data.trashCount++;
+												bin.save();
+												unique.save();
+												res.status(200).send({"message":"end",user:unique});
+										
+									}
+								})
+						}else{
 						unique.history.push(hist);
+						bin.history.push(hist);
 						unique.data.trashWeight+=Number(req.body.trashWeight);
 						unique.data.trashCount++;
-						unique.data.credits+=Number(req.body.credits);
 						bin.save();
 						unique.save();
 						res.status(200).send({"message":"end",user:unique});
+						}
 					}
 				})
 			}
 		})
 })
+
+// @route POST /getUserData
+// @desc returns the user data
+// @params username
+app.post("/getUserData",(req,res)=>{
+	Unique.findOne({username:req.body.username},(err,user)=>{
+		if(err) throw err;
+		else if(!user){
+			res.status(400).send({"message":"noUser"});
+		}else{
+			res.status(200).send({user:user});
+		}
+	})
+})
+
+// @route POST /getMyQr
+// @desc creates a hash => QR for the user
+// @params username
+app.post("/getMyQr",(req,res)=>{
+	Unique.findOne({username:req.body.username},(err,user)=>{
+		if(err) throw err;
+		else{
+			if(!user){
+				res.status(400).send("noUser");	
+			}else{
+			// var random = cryptoRandomString({length: 10});
+			user.sec = true;	
+			user.save();
+			QRCode.toDataURL(req.body.username, function (err, url) {
+				res.status(200).send(url);
+			})
+			}
+		}
+		
+	})
+})
+
 
 app.post("/home",(req,res)=>{
 	
@@ -397,45 +571,17 @@ app.post("/getOffers",(req,res)=>{
 		res.status(400).send({'Message':"Invalid request"});		
 	}
 	
-})
+});
 
-// @route POST /updateData
-// @desc Updating the User data
 
-app.post("/updateData",(req,res)=>{
-	if(jwtVerify(req.body.token)==1){
-		jwt.verify(req.body.token,KEY,function(err,token){
-		if(err){
-			console.log(err);
-		}else{
-			User.findById(token.id,(err,user)=>{
-				var hist = {
-					date:req.body.date,
-					credits:req.body.credits,
-					trashWeight:req.body.quantity,
-				}
-				user.data.credits += req.body.credits;
-				user.data.trashCount++;
-				user.data.trashWeight+=req.body.quantity;
-				user.history.push(hist);
-				user.save();
-				res.status(200).send({"message":"ok"});
-			})
-		}
-		})
-	}
-})
+
 
 // @route POST /redeemOffer
 // @desc redeem an offer i.e reduce credits
-
+// params username credits
 app.post("/redeemOffer",(req,res)=>{
 	if(jwtVerify(req.body.token)==1){
-		jwt.verify(req.body.token,KEY,function(err,token){
-		if(err){
-			console.log(err);
-		}else{
-			User.findById(token.id,(err,user)=>{
+			Unique.findOne({username:req.body.username},(err,user)=>{
 				var flag = user.data.credits-req.body.credits;
 				if(flag<0){	
 					user.save();
@@ -446,12 +592,97 @@ app.post("/redeemOffer",(req,res)=>{
 					res.status(200).send({"message":"ok"});
 				}
 			})
-		}
-		})
 	}else{
 			res.status(400).send({"message":"Invalid req"});
 	}
-	
+})
+
+// @route GET /redeemOfferAdmin
+// @desc redeem an offer i.e reduce credits
+// params username credits
+
+app.get("/viewMyOffer/redeemOfferAdmin/:name/:username/:points",(req,res)=>{
+	if(jwtVerify(req.params.name)==1){
+			Unique.findOne({username:req.params.username},(err,user)=>{
+					user.data.credits -= Number(req.params.points);	
+					user.save();
+					res.render("claimOffer",{name:req.params.name,flag:"Offer Successfully Redeemed",offers:[],user:null});
+			})
+	}else{
+			res.render("claimOffer",{name:req.params.name,flag:"Oops..Try again later",offers:[],user:null});
+	}
+})
+
+// @route POST /joinChallenge
+// @desc allows user to join a challenge
+// @params username code
+
+app.post("/joinChallenge",(req,res)=>{
+	Unique.findOne({username:req.body.username},(err,user)=>{
+		if(err) throw err;
+		else if(!user){
+			res.status(400).send({message:"noUser"})
+		}else{
+			Challenge.findOne({code:req.body.code},(er,chal)=>{
+				if(err) throw err;
+				else if(!chal){
+					res.status(400).send({message:"noCode"})
+				}else if(!chal.state){
+					res.status(400).send({message:"expired"})
+				}else{
+					user.chals.push(chal.code);
+					chal.parts.push({username:user.username,totalWeight:0,scans:0})
+					chal.save();
+					user.save();
+					res.status(200).send({message:"joined",chals:user.chals})
+				}
+			})
+		}
+	})
+})
+
+// @route POST /getChallengeList
+// @desc Returns the user data regarding challenge
+// @params username
+app.post("/getChallengeList",(req,res)=>{
+	Unique.findOne({username:req.body.username},(err,user)=>{
+		if(err) throw err;
+		else if(!user){
+			res.status(400).send({message:"noUser"})
+		}else{
+			res.status(200).send(user.chals);
+		}
+	})
+})
+
+// @route POST /getChallengeData
+// @desc Returns the user data regarding challenge
+// @params username code
+app.post("/getChallengeData",(req,res)=>{
+	Unique.findOne({username:req.body.username},(err,user)=>{
+		if(err) throw err;
+		else if(!user){
+			res.status(400).send({message:"noUser"})
+		}else{
+			Challenge.findOne({code:req.body.code},(err,chal)=>{
+				if(err) throw err;
+				else if(!chal){
+					res.status(400).send({message:"noChallenge"});
+				}else{
+					var sorted = sort(chal.parts);
+					let i;
+					for(i=0;i<sorted.length;i++){
+						if(sorted[i].username == user.username){
+							res.status(200).send({chals:sorted[i],position:i+1});
+							break;
+						}
+					}
+					// res.send(sorted);
+				}
+			})
+			
+		}
+	})
 })
 
 // @route GET /logout
@@ -692,6 +923,100 @@ app.get("/adminConsole/:name",(req,res)=>{
 	
 })
 
+// @route GET /claimOffer
+// @desc seller redeem
+
+app.get("/claimOffer/:name",(req,res)=>{
+	res.render("claimOffer",{name:req.params.name,flag:"",offers:[],user:null});
+})
+
+
+// @route GET /codeScanner/:name
+// @desc Returns the Scan QR page
+// @params name(admin name)
+
+app.get("/codeScanner/:name",(req,res)=>{
+	res.render("codeScanner",{name:req.params.name});
+})
+
+// @route POST /checkqr/:name/:hash
+// @desc validate user
+// @params name(a_name) hash
+
+app.get("/checkQR/:name/:username",(req,res)=>{
+	
+	Unique.findOne({username:req.params.username},(err,user)=>{
+		if(err) throw err;
+		else{
+			if(!user){
+				res.render("claimOffer",{name:req.params.name,flag:"",offers:[],user:null});
+			}
+			else if(user.sec){
+				res.redirect("/viewMyOffer/"+req.params.name+"/"+req.params.username);
+				user.sec = false;
+				user.save();
+			}else{
+				res.render("claimOffer",{name:req.params.name,flag:"",offers:[],user:null});
+			}
+		}
+	})
+})
+
+// @route /viewMyOffer/:name
+// @desc Returns offers available for the user
+// @params name(admin name) 
+// @body username
+app.post("/viewMyOffer/:name",(req,res)=>{
+	Unique.findOne({username:req.body.code},(err,user)=>{
+		if(err){
+			console.log(err);
+		}else if(!user){
+			res.render("claimOffer",{name:req.params.name,flag:"No such User",offers:[],user:null});
+		}else{
+			Offer.find({owner:req.params.name},(err,offers)=>{
+				if(err){
+					console.log(err);
+				}else{
+					var avail = [];
+					offers.forEach((x)=>{
+						if(!( x.req > user.data.credits)){
+							avail.push(x);
+						}
+					})
+					res.render("claimOffer",{name:req.params.name,flag:"",offers:avail,user:user});
+				}
+			})		
+		}
+	})
+})
+
+// @route GET /viewMyOffer/:name/:username
+// @desc Returns offers available for the user
+// @params name(admin name) username
+app.get("/viewMyOffer/:name/:username",(req,res)=>{
+	
+	Unique.findOne({username:req.params.username},(err,user)=>{
+		if(err){
+			console.log(err);
+		}else if(!user){
+			res.render("claimOffer",{name:req.params.name,flag:"No such User",offers:[],user:null});
+		}else{
+			Offer.find({owner:req.params.name},(err,offers)=>{
+				if(err){
+					console.log(err);
+				}else{
+					var avail = [];
+					offers.forEach((x)=>{
+						if(!( x.req > user.data.credits)){
+							avail.push(x);
+						}
+					})
+					res.render("claimOffer",{name:req.params.name,flag:"",offers:avail,user:user});
+				}
+			})		
+		}
+	})
+})
 
 // @route GET /addOffer
 // @desc renders the page to add new offers
@@ -711,7 +1036,7 @@ app.get("/addOfferS/:name",(req,res)=>{
 // @route POST /addOffer
 // @desc Adds the new offer to db
 
-app.post("/addOffer/:name",(req,res)=>{
+app.post("/addOffer/:name",upload.single("image"),(req,res)=>{
 	Admin.findOne({username:req.params.name},(err,admin)=>{
 		if(err) throw err;
 		else{
@@ -721,13 +1046,15 @@ app.post("/addOffer/:name",(req,res)=>{
 				loc:req.body.loc,
 				code:req.body.code,
 				req:req.body.req,
-				owner:req.params.name
+				owner:req.params.name,
+				img:req.file.location,
+				type:req.body.type
 				})
 		offer.save();
 		res.redirect("/addOfferS/"+req.params.name);			
 		}
 	})
-
+	
 })
 
 // @route GET /deleteOffer
@@ -745,8 +1072,24 @@ app.get("/deleteOfferS/:name",(req,res)=>{
 	res.render("deleteOffer",{name:req.params.name,flag:"Successfully deleted the offer"});
 })
 
+// @route GET /binData/:admin_id
+// @desc Display details of Individual Bins
+
+app.get("/binData/:admin_id/:bid",(req,res)=>{
+	Bin.findOne({name:req.params.bid},(err,bin)=>{
+		if(bin.owner == req.params.admin_id){
+			res.render("binData",{bin:bin});	
+		}else{
+			res.send("You dont own this Bin")
+		}
+			
+	})
+	
+})
+
 // @route POST /deleteOffer
 // @desc removing from the db 
+
 app.post("/deleteOffer/:name",(req,res)=>{
 	Offer.findOneAndRemove({code:req.body.code},(err,offer)=>{
 		if(err){
@@ -757,6 +1100,118 @@ app.post("/deleteOffer/:name",(req,res)=>{
 	})
 })
 
+// @route GET /clearBin/:bid
+// @desc Resets the bin
+
+app.get("/clearBin/:aid/:bid",(req,res)=>{
+	Bin.findOne({name:req.params.bid},(err,bin)=>{
+		bin.totalWeight = 0;
+		bin.scans = 0;
+		bin.save();
+		res.redirect("/adminConsole/"+req.params.aid);
+	})
+})
+
+// @route GET /challenge/:name
+// @desc get the challenges page
+
+app.get("/challenge/:name",(req,res)=>{
+	Admin.findOne({username:req.params.name},(err,admin)=>{
+		if(!admin.challenge){
+			res.render("challenge",{name:req.params.name,flag:false});		
+		}else{
+			Challenge.findOne({code:admin.challenge},(err,chal)=>{
+				if(!chal){
+					res.render("challenge",{name:req.params.name,flag:false});		
+				}else if(chal.state){
+					var sorted = sort(chal.parts);
+					res.render("challenge",{name:req.params.name,flag:true,chal:chal,winner:false});	
+				}else{
+					res.render("challenge",{name:req.params.name,flag:true,chal:chal,winner:true});	
+				}
+				
+			})
+			
+		}
+	})
+	
+})
+
+// @route POST /addChallenge/:name
+// @desc Add a new challenge
+
+app.post("/addChallenge/:name",(req,res)=>{
+	Admin.findOne({username:req.params.name},(err,admin)=>{
+		if(err) throw err;
+		else{
+			if(admin){
+			var random = cryptoRandomString({length: 4});
+			admin.challenge = random;
+			admin.save();
+			var chal = new Challenge({
+				code:random,
+				owner:req.params.name,
+				totalWeight:0,
+				date:req.body.date,
+				points:req.body.points,
+				state:true
+			});
+			chal.save();
+			res.redirect("/challenge/"+req.params.name);
+			}else{
+				res.send("Poor Request")
+			}
+		}
+	})
+})
+
+// @route GET /endChallenge
+// @desc End the Challenge
+app.get("/endChallenge/:name/:winner",(req,res)=>{
+	Unique.findOne({username:req.params.winner},(err,user)=>{
+		if(err) throw err;
+		else{
+			Admin.findOne({username:req.params.name},(err,admin)=>{
+				if(err){
+					throw err;
+				}else{
+					Challenge.findOne({code:admin.challenge},(err,chal)=>{
+						if(err) throw err
+						else{
+							user.data.credits+=Number(chal.points);
+							chal.state = false;
+							user.ntfy.push( "You have WON "+chal.points.toString()+" POINTS from the Contest Conducted by " +admin.corp);
+							user.save();
+							admin.save();
+							chal.save();
+							res.redirect("/challenge/"+req.params.name);
+						}
+					})
+				}
+			})
+		}
+	})
+})
+
+// @route GET /removeChallenge/:name
+// @desc Deletes the challenge
+app.get("/removeChallenge/:name",(req,res)=>{
+	Admin.findOne({username:req.params.name},(err,admin)=>{
+		if(err) throw err;
+		else{
+			Challenge.findOneAndRemove({code:admin.challenge},(err,chal)=>{
+				if(err) throw err;
+				else{
+					admin.challenge = null;
+					admin.save();
+					res.redirect("/challenge/"+req.params.name);
+				}
+			})
+			
+			
+		}
+	})
+})
 // @desc Server listening on PORT 3000
 
 app.listen(process.env.PORT || 3000,()=>{

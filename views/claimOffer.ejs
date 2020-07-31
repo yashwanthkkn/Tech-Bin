@@ -1,0 +1,96 @@
+<%- include("partials/header"); %>
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+		<a class="navbar-brand" href="#"><strong class="pl-2"><i class="fas fa-dumpster-fire"></i>  Incentivized Tech Bin</strong></a>
+	  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+		<span class="navbar-toggler-icon"></span>
+	  </button>
+	  <div class="collapse navbar-collapse" id="navbarNav">
+		<ul class="navbar-nav">
+		  <li class="nav-item ">
+			<a class="nav-link" href="/adminConsole/<%=name%>">Home <span class="sr-only">(current)</span></a>
+		  </li>
+		<li class="nav-item">
+			<a class="nav-link" href="/challenge/<%=name%>">Contest</a>
+		  </li>
+		  <li class="nav-item">
+			<a class="nav-link" href="/addOffer/<%=name%>">Add Offer</a>
+		  </li>
+		  <li class="nav-item">
+			<a class="nav-link" href="/deleteOffer/<%=name%>">Delete Offer</a>
+		  </li>
+		  <li class="nav-item active">
+			<a class="nav-link text-warning" href="/claimOffer/<%=name%>">Redeem</a>
+		  </li>
+		  <li class="nav-item">
+			<a class="nav-link" href="/logout">Logout</a>
+		  </li>
+		</ul>
+	  </div>
+    </nav>
+	<div class="container">
+		<h2 class="text-warning text-center">User Claim console</h2>
+		
+		<div class="card text-white bg-dark border border-white rounded ">
+			<div class="card-body">
+				<a href="/codeScanner/<%=name%>"><button class="btn btn-warning btn-block text-center">Scan QR</button></a>
+				<p></p>
+				<form method="POST" action="/viewMyOffer/<%=name%>" name="addBus">
+				<div class="form-group ">
+					<label for="code" class=" font-weight-bold">User Id (Aadhar) :</label>
+					<input type="text" id="name" name="code" placeholder="12 digit number" class="form-control" required>
+					<span id="numberloc" class="text-danger"></span>
+				</div>
+				<div class="text-center">
+					<button type="submit" class="btn btn-lg btn-warning rounded-pill" >Submit</button>
+					<p></p>
+				</div>
+					<p class="text-center"><%=flag%></p>
+			</form>	
+			</div>
+		</div>
+	</div>
+<%if(offers.length!=0){%>
+<div class="container mt-2">
+	<div class="card text-white bg-dark border border-white rounded">
+		<div class="card-body">
+				
+				<h4 class="text-center text-warning">Offers available for <%=user.username%></h4>
+				<table class="mx-auto text-center table table-dark table-striped mt-2">
+					<tr>
+						<th>S.No</th>
+						<th>Name</th>
+						<th>Desc</th>
+						<th>Points</th>						
+						<th>Claim</th>
+
+					</tr>
+					<% var i = 1; %>
+					<% offers.forEach((offer)=>{ %>
+					<tr>
+						<td><%=i++%></td>
+						<td><%=offer.name%></td>
+						<td><%=offer.desc%></td>
+						<td><%=offer.req%></td>
+						<td>
+								<%if(user){%>
+							<a href="redeemOfferAdmin/<%=name%>/<%=user.username%>/<%=offer.req%>"><button class="btn btn-primary" >Claim</button></a>
+								<%}%>			
+						</td>
+					</tr>
+					<% }) %>
+				</table>
+			</div>
+		</div>
+	</div>
+
+<%}else{%>
+<div class="container mt-2">
+	<div class="card text-white bg-dark border border-white rounded">
+		<div class="card-body">
+				
+				<h4 class="text-center text-warning">No available offers</h4>
+		</div>
+	</div>
+</div>
+<%}%>
+<%- include("partials/footer"); %>

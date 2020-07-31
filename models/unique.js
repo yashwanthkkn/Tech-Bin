@@ -14,6 +14,9 @@ const UniqueSchema = new mongoose.Schema({
 	name: String,
   	dateOfBirth:String,
   	gender:String,
+	sec:Boolean,
+	chals:[],
+	ntfy:[]
 });
 
 

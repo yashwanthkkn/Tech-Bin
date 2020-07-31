@@ -6,14 +6,20 @@
 	  </button>
 	  <div class="collapse navbar-collapse" id="navbarNav">
 		<ul class="navbar-nav">
-		  <li class="nav-item active">
+		  <li class="nav-item ">
 			<a class="nav-link" href="/adminConsole/<%=name%>">Home <span class="sr-only">(current)</span></a>
 		  </li>
-		  <li class="nav-item">
-			<a class="nav-link" href="/addOffer/<%=name%>">Add Offer</a>
+		<li class="nav-item">
+			<a class="nav-link" href="/challenge/<%=name%>">Contest</a>
 		  </li>
-		  <li class="nav-item">
+		  <li class="nav-item active">
+			<a class="nav-link text-warning" href="/addOffer/<%=name%>">Add Offer</a>
+		  </li>
+		  <li class="nav-item ">
 			<a class="nav-link" href="/deleteOffer/<%=name%>">Delete Offer</a>
+		  </li>
+		  <li class="nav-item ">
+			<a class="nav-link" href="/claimOffer/<%=name%>">Redeem</a>
 		  </li>
 		  <li class="nav-item">
 			<a class="nav-link" href="/logout">Logout</a>
@@ -22,10 +28,17 @@
 	  </div>
     </nav>
 <div class="container">
-		<h2 class="text-dark text-center">Add New Offer</h2>
+		<h2 class="text-dark text-center">Add New Offers And Challenge</h2>
 	<div class="card text-white bg-dark border border-white rounded">
 		<div class="card-body">
-			<form method="POST" action="/addOffer/<%=name%>">
+			<form method="POST" action="/addOffer/<%=name%>" enctype="multipart/form-data">
+				  <div class="form-group">
+					<label for="type">Type</label>
+					<select class="form-control" id="type" name="type">
+					  <option value="of">Offer</option>
+					  <option value="ch">Challenge</option>
+					</select>
+				 </div>
 				<div class="form-group ">
 					<label for="name" class="font-weight-bold">Shop Name :</label>
 					<input type="text" id="name" name="name" placeholder="name" class="form-control" >
@@ -51,6 +64,12 @@
 					<input type="text" id="req" name="req" placeholder="" class="form-control">
 					<span id="fromloc" class="text-danger"></span>
 				</div>
+				<p></p>
+				<div class="custom-file">
+    				<input type="file" class="custom-file-input" id="image" name="image">
+    				<label class="custom-file-label" for="image" required accept="image/*">Upload the Offer Image</label>
+  				</div>
+				<p></p>		
 				<div class="text-center">
 					<button type="submit" class="btn btn-lg btn-warning rounded-pill" >Submit</button>
 					<p></p>
@@ -61,4 +80,11 @@
 	</div>
 		
 	</div>
+<script>
+// Add the following code if you want the name of the file appear on select
+$(".custom-file-input").on("change", function() {
+  var fileName = $(this).val().split("\\").pop();
+  $(this).siblings(".custom-file-label").addClass("selected").html(fileName);
+});
+</script>
 <%- include("partials/footer"); %>

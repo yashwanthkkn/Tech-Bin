@@ -8,7 +8,8 @@ const BinSchema = new mongoose.Schema({
 	totalWeight:Number,
 	owner:String,
 	scans:Number,
-	owned:false
+	owned:false,
+	history:[]
 });
 
 
