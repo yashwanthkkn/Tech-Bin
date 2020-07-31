@@ -685,6 +685,20 @@ app.post("/getChallengeData",(req,res)=>{
 	})
 })
 
+// @route POST /getNotifications
+// @desc returns the notifications of the username
+// @params username
+ app.post("/getNotifications",(req,res)=>{
+	 Unique.findOne({username:req.body.username},(err,user)=>{
+		if(err) throw err;
+		 else if(!user){
+			 res.status(400).send({message:"noUser"});
+		 }else{
+			 res.status(200).send(user.ntfy);
+		 }
+	 })
+ })
+
 // @route GET /logout
 // @desc Logs out user
 
