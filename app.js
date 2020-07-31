@@ -1,4 +1,7 @@
+require('dotenv').config()
+
 // PACKAGES REQUIRED
+
 var express               = require("express"),
     mongoose              = require("mongoose"),
     bodyparser            = require("body-parser"),
@@ -22,30 +25,30 @@ const multerS3 = require('multer-s3');
 
 var LoggedInUser = 0;  
 var app = express();
-var KEY = "SOmeRanDOmeSbnbfsjhbdfjsbdjkb839827428397482798%^%&^^&%&^%&^?>?/jhskjdhfkjskh";
+var KEY = process.env.KEY;
 
 
-AWS.config.region = 'ap-south-1'; // Region
+AWS.config.region = process.env.REGION; // Region
 AWS.config.credentials = new AWS.CognitoIdentityCredentials({
-    IdentityPoolId: 'ap-south-1:bdc6bae3-952d-4a50-b94e-fabd18a34d9d',
+    IdentityPoolId: process.env.ID_POOL,
 });
 
 AWS.config.update({
-    accessKeyId : "AKIAQKY2NO7W7L2ANNHI",
- secretAccessKey : "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",
-    region:"ap-south-1"
+    accessKeyId : process.env.ACCESS_KEY,
+ secretAccessKey : process.env.SECRET_KEY,
+    region:process.env.REGION
 });
 
 
 
 const rekognition = new AWS.Rekognition()
 
-var BucketName = "bucketforsbml";
+var BucketName = process.env.BUCKET;
 
 
 const s3 = new AWS.S3({
-  accessKeyId: 'AKIAQKY2NO7W7UFWM6XI',
-  secretAccessKey: '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',
+  accessKeyId: process.env.ACCESS_KEY_S3,
+  secretAccessKey: process.env.SECRET_KEY_S3,
   Bucket: BucketName,
   apiVersion: '2006-03-01'
  });
@@ -96,17 +99,9 @@ app.use(bodyparser.urlencoded({extented:true}));
 // SETTING UP THE VIEW ENGINE
 app.set("view engine","ejs");
 
-// // CONNECTING THE DATABASE TO THE SERVER
-// mongoose.connect('mongodb://localhost/PaytrexDb', {
-	
-//   useNewUrlParser: true,
-//   useUnifiedTopology: true,
-//   useFindAndModify: false,
-//   useCreateIndex:true
+const MongoURI = process.env.MongoURI;
 
-// });
-
-mongoose.connect('mongodb+srv://user:nN6JAsww5cMup1Ai@cluster0-f0akj.mongodb.net/SbDb?retryWrites=true&w=majority', {
+mongoose.connect(MongoURI, {
 	
   useNewUrlParser: true,
   useUnifiedTopology: true,
@@ -117,10 +112,6 @@ mongoose.connect('mongodb+srv://user:nN6JAsww5cMup1Ai@cluster0-f0akj.mongodb.net
 
 ///////////////////////////////////////--- FUNCTIONS ---/////////////////////////////////////////
 
-function jwtVerify(token){
-
-	return 1;
-}
 
 function sort(temp){
 	flag = 0;
@@ -183,6 +174,12 @@ function invArray(array) {
 
     return array.reverse();
 
+}
+
+
+function jwtVerify(token){
+
+	return 1;
 }
 
 // generates checksum
