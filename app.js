@@ -707,6 +707,39 @@ app.post("/getChallengeData",(req,res)=>{
 	 })
  })
 
+
+ // @route POST /removeNotification
+ // @desc Deletes the notification
+ // @params username index
+ app.post("/removeNotification",(req,res)=>{
+	 Unique.findOne({username:req.body.username},(err,user)=>{
+		 if(err) throw err;
+		 else if(!user){
+			 res.status(400).send({message:"noUser"});
+		 }else{
+			 user.ntfy.splice(req.body.index,1);
+			 user.save();
+			 res.status(200).send(user.ntfy);
+		 }
+	 })
+ })
+
+// @route POST /removeChallenge
+// @desc Deletes the Challenges
+// @params username index
+ app.post("/removeChallenge",(req,res)=>{
+	Unique.findOne({username:req.body.username},(err,user)=>{
+		if(err) throw err;
+		else if(!user){
+			res.status(400).send({message:"noUser"});
+		}else{
+			user.chals.splice(req.body.index,1);
+			user.save();
+			res.status(200).send(user.chals);
+		}
+	})
+})
+
 // @route GET /logout
 // @desc Logs out user
 

@@ -66,17 +66,19 @@
 					</tr>
 					<% var i = 1; %>
 					<% offers.forEach((offer)=>{ %>
-					<tr>
-						<td><%=i++%></td>
-						<td><%=offer.name%></td>
-						<td><%=offer.desc%></td>
-						<td><%=offer.req%></td>
-						<td>
-								<%if(user){%>
-							<a href="/viewMyOffer/redeemOfferAdmin/<%=name%>/<%=user.username%>/<%=offer.req%>"><button class="btn btn-primary" >Claim</button></a>
-								<%}%>			
-						</td>
-					</tr>
+					<% if(offer.type != "ch"){%>
+							<tr>
+								<td><%=i++%></td>
+								<td><%=offer.name%></td>
+								<td><%=offer.desc%></td>
+								<td><%=offer.req%></td>
+								<td>
+										<%if(user){%>
+									<a href="/viewMyOffer/redeemOfferAdmin/<%=name%>/<%=user.username%>/<%=offer.req%>"><button class="btn btn-primary" >Claim</button></a>
+										<%}%>			
+								</td>
+							</tr>
+						<%}%>
 					<% }) %>
 				</table>
 			</div>
