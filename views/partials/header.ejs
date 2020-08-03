@@ -13,21 +13,23 @@
                 border: white solid 3px;
                 padding: 5px;
             }
-		/* body {
+		 /* body {
  			background-image: url("https://sbhostbucket.s3.ap-south-1.amazonaws.com/bin.jpg");
 			background-repeat: no-repeat;
-			height: auto;
+			height: 100%;
   			background-size: cover;
-			/* background-position: center; */
 		} */
-		html { 
-  background: url("https://sbhostbucket.s3.ap-south-1.amazonaws.com/bin.jpg") no-repeat center center fixed; 
- 	-webkit-background-size: cover;
-  	-moz-background-size: cover;
-  	-o-background-size: cover;
-  	background-size: cover;
+body, html {
+  height: 100%;
+}
+.bg {
+  background-image: url("https://sbhostbucket.s3.ap-south-1.amazonaws.com/bin.jpg");
+  height: 100%;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
 }
         </style>
 	</head>	
 	<body class="bg-warning">
-		
+		<div class="bg">
