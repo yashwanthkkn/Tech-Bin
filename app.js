@@ -1236,7 +1236,7 @@ app.get("/endChallenge/:name/:winner",(req,res)=>{
 						else{
 							user.data.credits+=Number(chal.points);
 							chal.state = false;
-							user.ntfy.push( "You have WON "+chal.points.toString()+" POINTS from the Contest Conducted by " +admin.corp);
+	user.ntfy.push( {messgae:"You have WON "+chal.points.toString()+" POINTS from the Contest Conducted by " +admin.corp,points:chal.points});
 							user.save();
 							admin.save();
 							chal.save();
